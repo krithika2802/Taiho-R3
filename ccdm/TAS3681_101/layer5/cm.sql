@@ -7,48 +7,27 @@ WITH included_subjects AS (
                 SELECT DISTINCT studyid, siteid, usubjid FROM subject ),
 
      cm_data AS (
-                 -- TAS0621-101
-                 select studyid,
-                 siteid,
-                 usubjid,
-                 row_number() over (partition by studyid, siteid, usubjid order by cmstdtc) as cmseq,
-                 cmtrt,
-                 cmmodify,
-                 cmdecod,
-                 cmcat,
-                 cmscat,
-                 cmindc,
-                 cmdose,
-                 cmdosu,
-                 cmdosfrm,
-                 cmdosfrq,
-                 cmdostot,
-                 cmroute,
-                 cmstdtc,
-                 cmendtc,
-                 cmsttm,
-                 cmentm
-                 from (
+                 -- TAS3681-101
                 SELECT  "project"::text AS studyid,
                         "SiteNumber"::text AS siteid,
-                        substring(trim("Subject"),0,8)::text AS usubjid,
+                        "Subject"::text AS usubjid,
                         "RecordPosition"::integer AS cmseq,
-                        coalesce(nullif("CMTRT",''),'Missing')::text AS cmtrt,
+                        "CMTRT"::text AS cmtrt,
                         "CMINDC"::text AS cmmodify,
                         "CMTRT_PT"::text AS cmdecod,
                         "CMTRT_ATC"::text AS cmcat,
                         'Concomitant Medications'::text AS cmscat,
-                        coalesce(nullif("CMINDC",''),'Missing')::text AS cmindc,
+                        "CMINDC"::text AS cmindc,
                         Null::numeric AS cmdose,
                         Null::text AS cmdosu,
                         Null::text AS cmdosfrm,
                         Null::text AS cmdosfrq,
                         Null::numeric AS cmdostot,
                         "CMROUTE"::text AS cmroute,
-                        case when cmstdtc='' then null
+                        case when cmstdtc='' or cmstdtc like '%0000%' then null
 							else to_date(cmstdtc,'DD Mon YYYY') 
 						end ::timestamp without time zone AS cmstdtc,
-						case when cmendtc='' then null
+						case when cmendtc='' or cmendtc like '%0000%' then null
 							else to_date(cmendtc,'DD Mon YYYY') 
 						end ::timestamp without time zone AS cmendtc,
                         null::time without time zone AS cmsttm,
@@ -57,7 +36,7 @@ WITH included_subjects AS (
 ( select *,concat(replace(substring(upper("CMSTDAT_RAW"),1,2),'UN','01'),replace(substring(upper("CMSTDAT_RAW"),3),'UNK','Jan')) AS cmstdtc,
 	     concat(replace(substring(upper("CMENDAT_RAW"),1,2),'UN','01'),replace(substring(upper("CMENDAT_RAW"),3),'UNK','Jan')) AS cmendtc
 from tas3681_101."CM"	
-)cm )cm
+)cm 
      )
 
 SELECT 
